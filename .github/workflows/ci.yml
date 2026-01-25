@@ -70,7 +70,7 @@ jobs:
         bundler-cache: true
 
     - name: Build gem
-      run: gem build nfcom.gemspec
+      run: gem build autentique.gemspec
 
     - name: Upload gem artifact
       uses: actions/upload-artifact@v4
