@@ -498,7 +498,6 @@ This gem is not officially maintained by Autentique. It's a community-driven pro
 
 - 🐛 Report bugs: [GitHub Issues](https://github.com/yourusername/autentique-ruby/issues)
 - 💬 Questions: [GitHub Discussions](https://github.com/yourusername/autentique-ruby/discussions)
-- 📧 Email: your.email@example.com
 
 ## Changelog
 
