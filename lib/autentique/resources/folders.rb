@@ -12,31 +12,35 @@ module Autentique
       # List all folders
       #
       # @return [Array<Hash>]
-      def list
+      def list(limit: 30, page: 1)
         query = client.graphql_client.parse <<-GRAPHQL
-          query {
-            folders {
-              id
-              name
-              created_at
+          query($limit: Int!, $page: Int!) {
+            folders(limit: $limit, page: $page) {
+              total
+              data {
+                id
+                name
+                created_at
+              }
             }
           }
         GRAPHQL
 
-        result = client.query(query)
+        result = client.query(query, variables: { limit: limit, page: page })
         raise QueryError.new('Query failed', result.errors.messages) if result.errors.any?
 
-        result.data.folders.map(&:to_h)
+        result.data.folders.data.map(&:to_h)
       end
 
       # Create a new folder
       #
       # @param name [String] The folder name
+      # @param parent_id [String, nil] The parent folder ID
       # @return [Hash]
-      def create(name:)
+      def create(name:, parent_id: nil)
         query = client.graphql_client.parse <<-GRAPHQL
-          mutation($name: String!) {
-            createFolder(name: $name) {
+          mutation($folder: FolderInput!, $parent_id: UUID) {
+            createFolder(folder: $folder, parent_id: $parent_id) {
               id
               name
               created_at
@@ -44,7 +48,10 @@ module Autentique
           }
         GRAPHQL
 
-        result = client.query(query, variables: { name: name })
+        variables = { folder: { name: name } }
+        variables[:parent_id] = parent_id if parent_id
+
+        result = client.query(query, variables: variables)
         raise QueryError.new('Query failed', result.errors.messages) if result.errors.any?
 
         result.data.create_folder.to_h

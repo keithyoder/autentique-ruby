@@ -7,7 +7,7 @@ module Autentique
         def list(status: nil, limit: 60, page: 1) # rubocop:disable Metrics/MethodLength
           query_string = if status
                            <<-GRAPHQL
-          query($status: DocumentStatus, $limit: Int, $page: Int) {
+          query($status: DocumentStatusEnum, $limit: Int!, $page: Int!) {
             documents(status: $status, limit: $limit, page: $page) {
               total
               data { id name created_at signatures { public_id name email } }

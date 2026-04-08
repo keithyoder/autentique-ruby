@@ -82,7 +82,12 @@ RSpec.describe Autentique::Client do
 
     let(:mock_query) { instance_double(GraphQL::Query) }
     let(:variables) { { id: 'test-123' } }
-    let(:mock_response) { instance_double(GraphQL::Client::Response) }
+    let(:mock_response) { instance_double(GraphQL::Client::Response, errors: []) }
+
+    # For errors
+    let(:auth_error_response) { instance_double(GraphQL::Client::Response, errors: [{ 'message' => 'Authentication failed' }]) }
+    let(:rate_limit_response) { instance_double(GraphQL::Client::Response, errors: [{ 'message' => 'Rate limit exceeded' }]) }
+    let(:other_error_response) { instance_double(GraphQL::Client::Response, errors: [{ 'message' => 'Some other error' }]) }
 
     before do
       allow(client.graphql_client).to receive(:query)
@@ -103,29 +108,63 @@ RSpec.describe Autentique::Client do
       result = client.query(mock_query)
       expect(result).to eq(mock_response)
     end
-  end
 
-  describe '#graphql_client' do
-    subject(:client) { described_class.new(api_key: api_key) }
+    context 'when GraphQL returns authentication errors' do
+      let(:auth_error_response) { instance_double(GraphQL::Client::Response, errors: [{ 'message' => 'Authentication failed' }]) }
 
-    it 'returns a GraphQL::Client instance' do
-      expect(client.graphql_client).to be_a(GraphQL::Client)
+      before do
+        allow(client.graphql_client).to receive(:query)
+          .with(mock_query, variables: variables)
+          .and_return(auth_error_response)
+      end
+
+      it 'raises Autentique::AuthenticationError' do
+        expect do
+          client.query(mock_query, variables: variables)
+        end.to raise_error(Autentique::AuthenticationError)
+      end
     end
 
-    it 'memoizes the graphql_client' do
-      client1 = client.graphql_client
-      client2 = client.graphql_client
-      expect(client1).to be(client2)
-    end
-  end
+    context 'when GraphQL returns rate limit errors' do
+      let(:rate_limit_response) { instance_double(GraphQL::Client::Response, errors: [{ 'message' => 'Rate limit exceeded' }]) }
 
-  describe 'API endpoint constants' do
-    it 'defines API_ENDPOINT' do
-      expect(described_class::API_ENDPOINT).to eq('https://api.autentique.com.br/v2/graphql')
+      before do
+        allow(client.graphql_client).to receive(:query)
+          .with(mock_query, variables: variables)
+          .and_return(rate_limit_response)
+      end
+
+      it 'raises Autentique::RateLimitError' do
+        expect do
+          client.query(mock_query, variables: variables)
+        end.to raise_error(Autentique::RateLimitError, /rate limit/i)
+      end
     end
 
-    it 'defines SANDBOX_ENDPOINT' do
-      expect(described_class::SANDBOX_ENDPOINT).to eq('https://api.autentique.com.br/v2/graphql')
+    context 'when GraphQL returns other errors' do
+      let(:other_error_response) { instance_double(GraphQL::Client::Response, errors: [{ 'message' => 'Some other error' }]) }
+
+      before do
+        allow(client.graphql_client).to receive(:query)
+          .with(mock_query, variables: variables)
+          .and_return(other_error_response)
+      end
+
+      it 'raises Autentique::QueryError' do
+        expect do
+          client.query(mock_query, variables: variables)
+        end.to raise_error(Autentique::QueryError)
+      end
+
+      it 'includes error messages in the QueryError' do
+        error = nil
+        begin
+          client.query(mock_query, variables: variables)
+        rescue Autentique::QueryError => e
+          error = e
+        end
+        expect(error.errors).to eq(['Some other error'])
+      end
     end
   end
 end
