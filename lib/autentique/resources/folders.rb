@@ -56,6 +56,7 @@ module Autentique
 
         result.data.create_folder.to_h
       end
+
       # Delete a folder
       #
       # @param id [String] The folder ID

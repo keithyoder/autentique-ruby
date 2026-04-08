@@ -86,9 +86,11 @@ module Autentique
     def build_graphql_client
       begin
         schema = GraphQL::Client.load_schema(@http_client)
-      rescue KeyError, StandardError => e
+      rescue StandardError => e
         raise Autentique::Error,
-              "Unable to load GraphQL schema from Autentique API. Check your API key and network connectivity. Original error: #{e.message}"
+              'Unable to load GraphQL schema from Autentique API. ' \
+              'Check your API key and network connectivity. ' \
+              "Original error: #{e.message}"
       end
 
       client = GraphQL::Client.new(schema: schema, execute: @http_client)

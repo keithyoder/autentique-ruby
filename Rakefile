@@ -24,7 +24,7 @@ namespace :schema do
   task :dump do
     require 'autentique'
 
-    api_key = ENV['AUTENTIQUE_API_KEY']
+    api_key = ENV.fetch('AUTENTIQUE_API_KEY', nil)
     abort 'AUTENTIQUE_API_KEY environment variable is required' if api_key.nil? || api_key.empty?
 
     puts 'Fetching schema from Autentique API...'

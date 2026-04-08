@@ -153,9 +153,17 @@ RSpec.describe Autentique::Client do
       it 'raises Autentique::QueryError' do
         expect do
           client.query(mock_query, variables: variables)
-        end.to raise_error(Autentique::QueryError) do |error|
-          expect(error.errors).to eq(['Some other error'])
+        end.to raise_error(Autentique::QueryError)
+      end
+
+      it 'includes error messages in the QueryError' do
+        error = nil
+        begin
+          client.query(mock_query, variables: variables)
+        rescue Autentique::QueryError => e
+          error = e
         end
+        expect(error.errors).to eq(['Some other error'])
       end
     end
   end
