@@ -32,17 +32,21 @@ RSpec.describe Autentique::Resources::Folders do
   end
 
   describe '#list' do
-    let(:mock_response) do
-      graphql_success(
-        folders: [
-          GraphQLFolder.new('folder-1', 'Contracts', '2025-01-20T10:00:00Z'),
-          GraphQLFolder.new('folder-2', 'Invoices',  '2025-01-21T10:00:00Z')
-        ]
-      )
+    before do
+      stub_const('GraphQLFolderPagination', Struct.new(:total, :data))
+      allow(client).to receive(:query).and_return(mock_response)
     end
 
-    before do
-      allow(client).to receive(:query).and_return(mock_response)
+    let(:mock_response) do
+      graphql_success(
+        folders: GraphQLFolderPagination.new(
+          2,
+          [
+            GraphQLFolder.new('folder-1', 'Contracts', '2025-01-20T10:00:00Z'),
+            GraphQLFolder.new('folder-2', 'Invoices',  '2025-01-21T10:00:00Z')
+          ]
+        )
+      )
     end
 
     it 'returns an array of hashes' do

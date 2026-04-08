@@ -59,9 +59,8 @@ end
 # Stub GraphQL schema introspection for tests
 def stub_graphql_schema
   schema_fixture = File.read(File.expand_path('fixtures/graphql_schema.json', __dir__))
-  schema_data = JSON.parse(schema_fixture)['data']['__schema']
+  schema = GraphQL::Client.load_schema(JSON.parse(schema_fixture))
 
-  # Stub at the HTTP level for introspection queries
   stub_request(:post, 'https://api.autentique.com.br/v2/graphql')
     .with { |request| request.body =~ /IntrospectionQuery/ }
     .to_return(
@@ -70,111 +69,7 @@ def stub_graphql_schema
       headers: { 'Content-Type' => 'application/json' }
     )
 
-  # Also stub at GraphQL::Client level to handle cases where HTTP stubs are overridden
-  allow(GraphQL::Client).to receive(:load_schema).and_wrap_original do |_original_method, *_args|
-    # Return our mock schema instead of making HTTP call
-    GraphQL::Schema.from_definition(build_schema_definition(schema_data))
-  end
-end
-
-# Build a GraphQL schema definition from the schema data
-def build_schema_definition(_schema_data)
-  # This is a simplified schema definition that matches our fixture
-  <<~SCHEMA
-    type Query {
-      document(id: UUID!): Document
-      documents(status: DocumentStatus, limit: Int, page: Int): DocumentConnection
-      folders: [Folder]
-    }
-
-    type Mutation {
-      createDocument: Document
-      deleteDocument(id: UUID!): Boolean
-      createFolder(name: String!): Folder
-      deleteFolder(id: UUID!): Boolean
-    }
-
-    enum DocumentStatus {
-      PENDING
-      SIGNED
-      REJECTED
-    }
-
-    scalar UUID
-
-    type Document {
-      id: UUID
-      name: String
-      refusable: Boolean
-      sortable: Boolean
-      created_at: String
-      files: DocumentFiles
-      signatures: [Signature]
-    }
-
-    type DocumentFiles {
-      original: String
-      signed: String
-    }
-
-    type Signature {
-      public_id: String
-      name: String
-      email: String
-      created_at: String
-      delivery_method: String
-      action: Action
-      link: Link
-      user: User
-      viewed: Event
-      signed: Event
-      rejected: RejectedEvent
-      email_events: EmailEvents
-    }
-
-    type Action {
-      name: String
-    }
-
-    type Link {
-      short_link: String
-    }
-
-    type User {
-      id: UUID
-      name: String
-      email: String
-      phone: String
-    }
-
-    type Event {
-      created_at: String
-    }
-
-    type RejectedEvent {
-      created_at: String
-      reason: String
-    }
-
-    type EmailEvents {
-      sent: Boolean
-      opened: Boolean
-      delivered: Boolean
-      refused: Boolean
-      reason: String
-    }
-
-    type Folder {
-      id: UUID
-      name: String
-      created_at: String
-    }
-
-    type DocumentConnection {
-      total: Int
-      data: [Document]
-    }
-  SCHEMA
+  allow(GraphQL::Client).to receive(:load_schema).and_return(schema)
 end
 
 # Helper method to create a test client

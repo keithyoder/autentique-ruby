@@ -15,6 +15,8 @@ module Autentique
     # @param api_key [String] Your Autentique API key
     # @param sandbox [Boolean] Whether to use sandbox mode (default: false)
     def initialize(api_key:, sandbox: false)
+      raise ArgumentError, 'Autentique API key is missing' if api_key.nil? || api_key.strip.empty?
+
       @api_key = api_key
       @sandbox = sandbox
       @http_client = build_http_client
@@ -41,7 +43,27 @@ module Autentique
     # @param variables [Hash] Query variables
     # @return [GraphQL::Client::Response]
     def query(query, variables: {})
-      @graphql_client.query(query, variables: variables)
+      result = @graphql_client.query(query, variables: variables)
+
+      if result.errors.any?
+        messages = result.errors.map { |e| e['message'] }
+
+        if messages.any? { |m| m =~ /authentication/i }
+          raise AuthenticationError, 'Autentique API key is invalid or missing'
+        end
+
+        raise RateLimitError, 'Autentique API rate limit exceeded' if messages.any? { |m| m =~ /rate limit/i }
+
+        raise QueryError.new('GraphQL query failed', messages)
+      end
+
+      result
+    rescue Autentique::Error
+      # Re-raise any Autentique errors untouched
+      raise
+    rescue StandardError => e
+      # Wrap only unexpected low-level errors
+      raise Error, "Unexpected error in Autentique client: #{e.message}"
     end
 
     # Get the GraphQL client
@@ -62,8 +84,16 @@ module Autentique
     end
 
     def build_graphql_client
-      schema = GraphQL::Client.load_schema(@http_client)
-      GraphQL::Client.new(schema: schema, execute: @http_client)
+      begin
+        schema = GraphQL::Client.load_schema(@http_client)
+      rescue KeyError, StandardError => e
+        raise Autentique::Error,
+              "Unable to load GraphQL schema from Autentique API. Check your API key and network connectivity. Original error: #{e.message}"
+      end
+
+      client = GraphQL::Client.new(schema: schema, execute: @http_client)
+      client.allow_dynamic_queries = true
+      client
     end
   end
 end
