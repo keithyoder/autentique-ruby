@@ -4,7 +4,7 @@ A Ruby client for the [Autentique](https://autentique.com.br/) digital signature
 
 [![CI](https://github.com/keithyoder/autentique-ruby/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/keithyoder/autentique-ruby/actions/workflows/ci.yml)
 [![Security](https://github.com/keithyoder/autentique-ruby/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/keithyoder/autentique-ruby/actions/workflows/security.yml)
-[![Gem Version](https://badge.fury.io/rb/nfcom.svg)](https://badge.fury.io/rb/nfcom)
+[![Gem Version](https://badge.fury.io/rb/nfcom.svg)](https://badge.fury.io/rb/autentique)
 
 ## Features
 
