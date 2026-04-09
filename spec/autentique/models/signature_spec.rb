@@ -11,6 +11,7 @@ RSpec.describe Autentique::Models::Signature do
         'public_id' => 'sig-123',
         'name' => 'John Doe',
         'email' => 'john@example.com',
+        'delivery_method' => 'DELIVERY_METHOD_EMAIL',
         'created_at' => '2025-01-25T10:00:00Z',
         'action' => { 'name' => 'SIGN' },
         'link' => { 'short_link' => 'https://autentique.com.br/s/abc123' },
@@ -69,6 +70,16 @@ RSpec.describe Autentique::Models::Signature do
 
     it 'sets email_events attribute' do
       expect(signature.email_events).to eq(attributes['email_events'])
+    end
+
+    it 'sets delivery_method attribute' do
+      sig = described_class.new('delivery_method' => 'DELIVERY_METHOD_WHATSAPP')
+      expect(sig.delivery_method).to eq('DELIVERY_METHOD_WHATSAPP')
+    end
+
+    it 'defaults delivery_method to nil when not present' do
+      sig = described_class.new({})
+      expect(sig.delivery_method).to be_nil
     end
   end
 
