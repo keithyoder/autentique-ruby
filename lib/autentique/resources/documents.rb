@@ -28,7 +28,7 @@ module Autentique
       private
 
       # Upload document using multipart/form-data
-      def upload_document(file:, document:, signers:, organization_id: nil, folder_id: nil) # rubocop:disable Metrics/AbcSize
+      def upload_document(file:, document:, signers:, organization_id: nil, folder_id: nil)
         uri = URI(Client::API_ENDPOINT)
 
         # Build GraphQL mutation
@@ -51,9 +51,7 @@ module Autentique
         )
 
         # Make request
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-
+        http = build_http_client(uri)
         request = Net::HTTP::Post.new(uri.path)
         request['Authorization'] = "Bearer #{client.api_key}"
         request['Content-Type'] = "multipart/form-data; boundary=#{boundary}"
@@ -109,35 +107,57 @@ module Autentique
       # Build multipart/form-data body for file uploads
       def build_multipart_body(mutation:, variables:, file:, boundary:)
         parts = []
-
-        # Operations part
-        operations = { query: mutation, variables: variables }
-        parts << "--#{boundary}\r\n"
-        parts << "Content-Disposition: form-data; name=\"operations\"\r\n\r\n"
-        parts << "#{operations.to_json}\r\n"
-
-        # Map part
-        map = { file: ['variables.file'] }
-        parts << "--#{boundary}\r\n"
-        parts << "Content-Disposition: form-data; name=\"map\"\r\n\r\n"
-        parts << "#{map.to_json}\r\n"
-
-        # File part
-        file_path = file.is_a?(String) ? file : file.path
-        file_content = File.binread(file_path)
-        file_name = File.basename(file_path)
-        mime_type = MIME::Types.type_for(file_path).first&.content_type || 'application/octet-stream'
-
-        parts << "--#{boundary}\r\n"
-        parts << "Content-Disposition: form-data; name=\"file\"; filename=\"#{file_name}\"\r\n"
-        parts << "Content-Type: #{mime_type}\r\n\r\n"
-        parts << file_content
-        parts << "\r\n"
-
-        # Close boundary
+        parts.concat(build_operations_part(mutation, variables, boundary))
+        parts.concat(build_map_part(boundary))
+        parts.concat(build_file_part(file, boundary))
         parts << "--#{boundary}--\r\n"
-
         parts.join
+      end
+
+      def build_operations_part(mutation, variables, boundary)
+        operations = { query: mutation, variables: variables }
+        [
+          "--#{boundary}\r\n",
+          "Content-Disposition: form-data; name=\"operations\"\r\n\r\n",
+          "#{operations.to_json}\r\n"
+        ]
+      end
+
+      def build_map_part(boundary)
+        map = { file: ['variables.file'] }
+        [
+          "--#{boundary}\r\n",
+          "Content-Disposition: form-data; name=\"map\"\r\n\r\n",
+          "#{map.to_json}\r\n"
+        ]
+      end
+
+      def build_file_part(file, boundary)
+        content, name, type = extract_file_info(file)
+        [
+          "--#{boundary}\r\n",
+          "Content-Disposition: form-data; name=\"file\"; filename=\"#{name}\"\r\n",
+          "Content-Type: #{type}\r\n\r\n",
+          content,
+          "\r\n"
+        ]
+      end
+
+      def extract_file_info(file)
+        if file.is_a?(String)
+          [File.binread(file), File.basename(file),
+           MIME::Types.type_for(file).first&.content_type || 'application/pdf']
+        elsif file.is_a?(Hash)
+          [file[:io].read, file[:name] || 'document.pdf', file[:mime_type] || 'application/pdf']
+        else
+          [file.read, 'document.pdf', 'application/pdf']
+        end
+      end
+
+      def build_http_client(uri)
+        Net::HTTP.new(uri.host, uri.port).tap do |http|
+          http.use_ssl = true
+        end
       end
     end
   end

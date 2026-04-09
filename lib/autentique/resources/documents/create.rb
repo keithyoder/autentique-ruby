@@ -14,8 +14,13 @@ module Autentique
             doc_input = Models::DocumentInput.new(doc_hash)
           end
 
-          response = upload_document(file: file, document: doc_input, signers: signer_inputs,
-                                     organization_id: organization_id, folder_id: folder_id)
+          response = upload_document(
+            file: file,
+            document: doc_input,
+            signers: signer_inputs,
+            organization_id: organization_id,
+            folder_id: folder_id
+          )
 
           document_data = response.dig('data', 'createDocument')
           raise QueryError.new('Failed to create document', response['errors']) if document_data.nil?

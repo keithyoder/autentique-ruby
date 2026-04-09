@@ -106,6 +106,93 @@ RSpec.describe Autentique::Resources::Documents do
     end
   end
 
+  describe '#create' do
+    let(:document_attrs) { { name: 'Test Contract' } }
+    let(:signers) { [{ email: 'signer@example.com', action: 'SIGN' }] }
+    let(:mock_http) { instance_double(Net::HTTP) }
+    let(:success_body) do
+      {
+        'data' => {
+          'createDocument' => {
+            'id' => 'doc-123',
+            'name' => 'Test Contract',
+            'refusable' => false,
+            'sortable' => false,
+            'created_at' => '2025-01-25T10:00:00Z',
+            'signatures' => []
+          }
+        }
+      }.to_json
+    end
+    let(:success_response) do
+      instance_double(Net::HTTPSuccess, is_a?: true, body: success_body)
+    end
+
+    before do
+      allow(documents).to receive(:build_http_client).and_return(mock_http)
+      allow(mock_http).to receive(:request).and_return(success_response)
+    end
+
+    context 'with a file path' do
+      let(:file_path) { '/tmp/test.pdf' }
+
+      before do
+        allow(File).to receive_messages(
+          binread: '%PDF binary content',
+          basename: 'test.pdf'
+        )
+      end
+
+      it 'returns a Document model' do
+        result = documents.create(file: file_path, document: document_attrs, signers: signers)
+        expect(result).to be_a(Autentique::Models::Document)
+      end
+
+      it 'sets the document name' do
+        result = documents.create(file: file_path, document: document_attrs, signers: signers)
+        expect(result.name).to eq('Test Contract')
+      end
+    end
+
+    context 'with a Hash containing an IO object' do
+      let(:file) { { io: StringIO.new('%PDF binary content'), name: 'contract.pdf', mime_type: 'application/pdf' } }
+
+      it 'returns a Document model' do
+        result = documents.create(file: file, document: document_attrs, signers: signers)
+        expect(result).to be_a(Autentique::Models::Document)
+      end
+    end
+
+    context 'with a bare IO object' do
+      let(:file) { StringIO.new('%PDF binary content') }
+
+      it 'returns a Document model' do
+        result = documents.create(file: file, document: document_attrs, signers: signers)
+        expect(result).to be_a(Autentique::Models::Document)
+      end
+    end
+
+    context 'when upload fails' do
+      let(:error_response) do
+        instance_double(Net::HTTPUnauthorized, is_a?: false, code: '401', message: 'Unauthorized')
+      end
+
+      before do
+        allow(mock_http).to receive(:request).and_return(error_response)
+        allow(File).to receive_messages(
+          binread: '%PDF binary content',
+          basename: 'test.pdf'
+        )
+      end
+
+      it 'raises UploadError' do
+        expect do
+          documents.create(file: '/tmp/test.pdf', document: document_attrs, signers: signers)
+        end.to raise_error(Autentique::UploadError)
+      end
+    end
+  end
+
   describe '#pending' do
     let(:documents_payload) do
       GraphQLDocumentsData.new(

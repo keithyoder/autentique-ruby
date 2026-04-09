@@ -19,6 +19,7 @@ RSpec.describe Autentique::Models::Document do
             'name' => 'John Doe',
             'email' => 'john@example.com',
             'created_at' => '2025-01-25T10:00:00Z',
+            'delivery_method' => 'DELIVERY_METHOD_EMAIL',
             'action' => { 'name' => 'SIGN' },
             'link' => { 'short_link' => 'https://autentique.com.br/s/abc123' },
             'signed' => nil,
@@ -64,6 +65,14 @@ RSpec.describe Autentique::Models::Document do
       expect(document.signatures.size).to eq(1)
     end
 
+    context 'when files are nil' do
+      let(:attributes) { { 'id' => 'doc-123', 'files' => nil } }
+
+      it 'returns nil for files' do
+        expect(document.files).to be_nil
+      end
+    end
+
     context 'when signatures are nil' do
       let(:attributes) { { 'id' => 'doc-123', 'signatures' => nil } }
 
@@ -82,12 +91,7 @@ RSpec.describe Autentique::Models::Document do
   end
 
   describe '#signed?' do
-    let(:base_attributes) do
-      {
-        'id' => 'doc-123',
-        'name' => 'Test Doc'
-      }
-    end
+    let(:base_attributes) { { 'id' => 'doc-123', 'name' => 'Test Doc' } }
 
     context 'when all signatures are signed' do
       let(:attributes) do
@@ -173,7 +177,11 @@ RSpec.describe Autentique::Models::Document do
         base_attributes.merge(
           'signatures' => [
             { 'email' => 'user1@example.com', 'signed' => nil, 'rejected' => nil },
-            { 'email' => 'user2@example.com', 'signed' => nil, 'rejected' => { 'created_at' => '2025-01-25T10:00:00Z', 'reason' => 'Not interested' } }
+            {
+              'email' => 'user2@example.com',
+              'signed' => nil,
+              'rejected' => { 'created_at' => '2025-01-25T10:00:00Z', 'reason' => 'Not interested' }
+            }
           ]
         )
       end
