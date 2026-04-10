@@ -9,6 +9,7 @@ require_relative 'documents/find'
 require_relative 'documents/pending'
 require_relative 'documents/list'
 require_relative 'documents/delete'
+require_relative 'documents/reject'
 
 module Autentique
   module Resources
@@ -18,6 +19,7 @@ module Autentique
       include Documents::Pending
       include Documents::List
       include Documents::Delete
+      include Documents::Reject
 
       attr_reader :client
 

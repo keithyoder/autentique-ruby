@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 GraphQLErrors = Struct.new(:any?, :messages) # rubocop:disable Lint/StructNewOverride
-GraphQLDocumentsData = Struct.new(:data)
+GraphQLDocumentsData = Struct.new(:total, :data)
 GraphQLData = Struct.new(
   :document,
   :documents,
+  :reject_document,
   :delete_document,
   :folders,
   :create_folder,
@@ -13,13 +14,13 @@ GraphQLData = Struct.new(
 GraphQLResponse = Struct.new(:errors, :data)
 
 module GraphQLHelpers
-  # Accept all optional values as a single hash
   def graphql_success(values = {})
     GraphQLResponse.new(
       GraphQLErrors.new(false, []),
       GraphQLData.new(
         values[:document],
         values[:documents],
+        values[:reject_document],
         values[:delete_document],
         values[:folders],
         values[:create_folder],

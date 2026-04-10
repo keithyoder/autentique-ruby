@@ -3,6 +3,16 @@
 # Suppress warnings from gem dependencies
 $VERBOSE = nil
 
+if ENV['COVERAGE']
+  require 'simplecov'
+  SimpleCov.start do
+    add_filter '/spec/'
+    add_group 'Resources', 'lib/autentique/resources'
+    add_group 'Models',    'lib/autentique/models'
+    add_group 'Client',    'lib/autentique/client'
+  end
+end
+
 require 'autentique'
 require 'webmock/rspec'
 require 'vcr'

@@ -32,7 +32,9 @@ module Autentique
           result = client.query(query, variables: { limit: limit, page: page })
           raise QueryError.new('Query failed', result.errors.messages) if result.errors.any?
 
-          result.data.documents&.data&.map { |doc| Models::Document.new(doc.to_h) } || []
+          docs = result.data.documents&.data&.map { |doc| Models::Document.new(doc.to_h) } || []
+          total = result.data.documents&.total || 0
+          { documents: docs, total: total }
         end
       end
     end
