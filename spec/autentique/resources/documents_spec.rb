@@ -193,9 +193,20 @@ RSpec.describe Autentique::Resources::Documents do
     end
   end
 
+  describe '#build_http_client' do
+    it 'returns a Net::HTTP instance with SSL enabled' do
+      uri = URI('https://api.autentique.com.br/v2/graphql')
+      http = documents.send(:build_http_client, uri)
+
+      expect(http).to be_a(Net::HTTP)
+      expect(http.use_ssl?).to be(true)
+    end
+  end
+
   describe '#pending' do
     let(:documents_payload) do
       GraphQLDocumentsData.new(
+        2,
         [
           { 'id' => 'doc-1', 'name' => 'Document 1', 'created_at' => '2025-01-25T10:00:00Z', 'signatures' => [] },
           { 'id' => 'doc-2', 'name' => 'Document 2', 'created_at' => '2025-01-25T11:00:00Z', 'signatures' => [] }
@@ -222,19 +233,23 @@ RSpec.describe Autentique::Resources::Documents do
         .with(anything, variables: { limit: 20, page: 1 })
     end
 
-    it 'returns Document models' do
-      expect(documents.pending)
-        .to all(be_a(Autentique::Models::Document))
+    it 'returns a hash with documents and total' do
+      result = documents.pending
+      expect(result).to include(:documents, :total)
+      expect(result[:documents]).to all(be_a(Autentique::Models::Document))
+      expect(result[:total]).to be_a(Integer)
     end
 
     context 'when no documents exist' do
       before do
         allow(client).to receive(:query)
-          .and_return(graphql_success(documents: GraphQLDocumentsData.new([])))
+          .and_return(graphql_success(documents: GraphQLDocumentsData.new(0, [])))
       end
 
-      it 'returns empty array' do
-        expect(documents.pending).to eq([])
+      it 'returns empty results' do
+        result = documents.pending
+        expect(result[:documents]).to eq([])
+        expect(result[:total]).to eq(0)
       end
     end
 
@@ -254,6 +269,7 @@ RSpec.describe Autentique::Resources::Documents do
   describe '#list' do
     let(:documents_payload) do
       GraphQLDocumentsData.new(
+        1,
         [{ 'id' => 'doc-1', 'name' => 'Document 1', 'created_at' => '2025-01-25T10:00:00Z', 'signatures' => [] }]
       )
     end
@@ -288,6 +304,56 @@ RSpec.describe Autentique::Resources::Documents do
 
     it 'returns boolean' do
       expect(documents.delete(document_id)).to be(true)
+    end
+  end
+
+  describe '#reject' do
+    let(:document_id) { 'doc-uuid-123' }
+
+    context 'without a reason' do
+      before do
+        allow(client).to receive(:query)
+          .and_return(graphql_success(reject_document: true))
+      end
+
+      it 'returns true' do
+        expect(documents.reject(document_id)).to be(true)
+      end
+
+      it 'passes only the id variable' do
+        documents.reject(document_id)
+        expect(client).to have_received(:query)
+          .with(anything, variables: { id: document_id })
+      end
+    end
+
+    context 'with a reason' do
+      before do
+        allow(client).to receive(:query)
+          .and_return(graphql_success(reject_document: true))
+      end
+
+      it 'returns true' do
+        expect(documents.reject(document_id, reason: 'Contrato cancelado')).to be(true)
+      end
+
+      it 'passes id and reason variables' do
+        documents.reject(document_id, reason: 'Contrato cancelado')
+        expect(client).to have_received(:query)
+          .with(anything, variables: { id: document_id, reason: 'Contrato cancelado' })
+      end
+    end
+
+    context 'when query fails' do
+      before do
+        allow(client).to receive(:query)
+          .and_return(graphql_error('Query failed'))
+      end
+
+      it 'raises QueryError' do
+        expect { documents.reject(document_id) }
+          .to raise_error(Autentique::QueryError)
+      end
     end
   end
 end

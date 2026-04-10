@@ -28,4 +28,10 @@ module Autentique
       @errors = errors
     end
   end
+
+  # Raised when a webhook signature is invalid
+  class InvalidSignatureError < Error; end
+
+  # Raised for webhook processing errors
+  class WebhookError < Error; end
 end

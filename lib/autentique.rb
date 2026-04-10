@@ -7,6 +7,7 @@ require_relative 'autentique/models/document'
 require_relative 'autentique/resources'
 require_relative 'autentique/resources/documents'
 require_relative 'autentique/resources/folders'
+require_relative 'autentique/webhook_processor'
 
 # Main module for the Autentique gem
 #

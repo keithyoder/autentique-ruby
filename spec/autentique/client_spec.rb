@@ -166,5 +166,36 @@ RSpec.describe Autentique::Client do
         expect(error.errors).to eq(['Some other error'])
       end
     end
+
+    context 'when an unexpected low-level error occurs' do
+      before do
+        allow(client.graphql_client).to receive(:query)
+          .and_raise(SocketError, 'connection refused')
+      end
+
+      it 'wraps the error as Autentique::Error' do
+        expect { client.query(mock_query, variables: variables) }
+          .to raise_error(Autentique::Error, /Unexpected error.*connection refused/i)
+      end
+    end
+  end
+
+  describe '#build_http_client (headers)' do
+    let(:client) { described_class.new(api_key: api_key) }
+
+    it 'sets the Authorization header with the API key' do
+      http_client = client.send(:build_http_client)
+      headers = http_client.headers({})
+      expect(headers['Authorization']).to eq("Bearer #{api_key}")
+    end
+  end
+
+  describe '#build_graphql_client' do
+    it 'raises Autentique::Error when schema cannot be loaded' do
+      allow(GraphQL::Client).to receive(:load_schema).and_raise(StandardError, 'timeout')
+
+      expect { described_class.new(api_key: api_key) }
+        .to raise_error(Autentique::Error, /Unable to load GraphQL schema.*timeout/i)
+    end
   end
 end

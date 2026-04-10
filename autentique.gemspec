@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.metadata['rubygems_mfa_required'] = 'true'
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir['{lib,spec}/**/*', '*.md', '*.gemspec', 'LICENSE*']
+    Dir['{lib}/**/*', '*.md', '*.gemspec', 'LICENSE*']
       .reject { |f| File.directory?(f) }
   end
 

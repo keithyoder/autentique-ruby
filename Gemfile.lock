@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    autentique (0.1.0)
+    autentique (0.1.1)
       graphql-client (~> 0.18)
       mime-types (~> 3.0)
 
