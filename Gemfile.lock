@@ -61,9 +61,7 @@ GEM
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
     mime-types-data (3.2026.0414)
-    minitest (6.0.6)
-      drb (~> 2.0)
-      prism (~> 1.5)
+    minitest (5.27.0)
     parallel (1.28.0)
     parser (3.3.11.1)
       ast (~> 2.4.1)
@@ -146,6 +144,7 @@ DEPENDENCIES
   autentique!
   bundler-audit
   connection_pool (< 3.0)
+  minitest (< 6.0)
   parallel (< 2.0)
   pry
   pry-byebug

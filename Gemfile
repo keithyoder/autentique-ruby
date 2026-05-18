@@ -9,6 +9,7 @@ gemspec
 group :development, :test do
   gem 'bundler-audit', require: false
   gem 'connection_pool', '< 3.0'
+  gem 'minitest', '< 6.0'
   gem 'parallel', '< 2.0'
   gem 'pry'
   gem 'pry-byebug'
