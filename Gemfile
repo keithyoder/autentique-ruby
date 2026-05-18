@@ -8,6 +8,7 @@ gemspec
 # Development dependencies
 group :development, :test do
   gem 'bundler-audit', require: false
+  gem 'parallel', '< 2.0'
   gem 'pry'
   gem 'pry-byebug'
   gem 'rake'
